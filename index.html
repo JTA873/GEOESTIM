@@ -375,6 +375,33 @@
                             <div class="stat-label">Points GPS</div>
                         </div>
                     </div>
+                    
+                    <!-- SECTION FILTRES DANS LES STATS (à droite) -->
+                    <div id="filters-section" style="display: none; background: rgba(255,255,255,0.95); border: 1px solid #e9ecef; border-radius: 12px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                            <span style="font-weight: 600; color: #495057; font-size: 16px;">🔍 Filtrer les projets</span>
+                            <span id="filter-results" style="font-size: 13px; color: #666; font-weight: normal;"></span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #495057; font-size: 13px;">CEP (Admin):</label>
+                                <select id="filter-cep" onchange="updateLigneOptions(); applyFilters();" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; background: white; font-size: 13px;">
+                                    <option value="">Tous les CEP</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #495057; font-size: 13px;">Ligne (BPTE):</label>
+                                <select id="filter-ligne" onchange="applyFilters();" style="width: 100%; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 6px; background: white; font-size: 13px;">
+                                    <option value="">Toutes les lignes</option>
+                                </select>
+                            </div>
+                            <div style="text-align: center;">
+                                <button onclick="clearFilters()" style="background: linear-gradient(45deg, #6c757d, #545b62); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 13px; transition: all 0.2s; box-shadow: 0 2px 8px rgba(108,117,125,0.3);">
+                                    Effacer les filtres
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -383,33 +410,6 @@
         
         <div style="position: relative;">
             <div id="map"></div>
-        </div>
-        
-        <!-- SECTION FILTRES SOUS LA CARTE -->
-        <div class="section" id="filters-section" style="display: none; padding: 15px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 15px 0; color: #495057; font-size: 18px; display: flex; align-items: center; gap: 8px;">
-                🔍 Filtrer les projets
-                <span id="filter-results" style="font-size: 14px; color: #666; font-weight: normal;"></span>
-            </h3>
-            <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: end;">
-                <div style="flex: 1; min-width: 200px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">CEP (Admin):</label>
-                    <select id="filter-cep" onchange="updateLigneOptions(); applyFilters();" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; background: white; font-size: 14px;">
-                        <option value="">Tous les CEP</option>
-                    </select>
-                </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #495057;">Ligne (BPTE):</label>
-                    <select id="filter-ligne" onchange="applyFilters();" style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; background: white; font-size: 14px;">
-                        <option value="">Toutes les lignes</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="clearFilters()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 14px; transition: all 0.2s;">
-                        Effacer les filtres
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- Tableau des résultats compact -->
