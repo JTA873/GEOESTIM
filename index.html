@@ -603,6 +603,301 @@
             }
         }
 
+        // ========== FONCTIONS FIREBASE COMPLÈTES ==========
+        
+        // Sauvegarder les données ADMIN dans Firebase (avec écrasement)
+        async function saveAdminDataToFirebase(adminData) {
+            if (!window.firebaseDB || !adminData || adminData.length === 0) return;
+            
+            try {
+                console.log('💾 Sauvegarde des données ADMIN dans Firebase...');
+                console.log(`📊 ${adminData.length} projets ADMIN à sauvegarder`);
+                
+                const batch = window.firebaseDB.batch();
+                
+                for (let i = 0; i < adminData.length; i++) {
+                    const item = adminData[i];
+                    if (item.F1) { // Si on a un code F
+                        const docRef = window.firebaseDB.collection('admin_projects').doc(item.F1);
+                        batch.set(docRef, {
+                            ...item,
+                            timestamp: new Date(),
+                            source: 'admin_upload',
+                            last_update: new Date().toISOString()
+                        }, { merge: false }); // merge: false = écrasement complet
+                    }
+                }
+                
+                await batch.commit();
+                console.log(`✅ ${adminData.length} projets ADMIN sauvegardés dans Firebase (écrasement)`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde ADMIN:', error);
+                alert('❌ Erreur lors de la sauvegarde ADMIN dans Firebase');
+            }
+        }
+        
+        // Sauvegarder les données BPTE dans Firebase (avec écrasement)
+        async function saveBpteDataToFirebase(bpteData) {
+            if (!window.firebaseDB || !bpteData || bpteData.length === 0) return;
+            
+            try {
+                console.log('💾 Sauvegarde des données BPTE dans Firebase...');
+                console.log(`📊 ${bpteData.length} projets BPTE à sauvegarder`);
+                
+                const batch = window.firebaseDB.batch();
+                
+                for (let i = 0; i < bpteData.length; i++) {
+                    const item = bpteData[i];
+                    if (item.code_f) { // Si on a un code F
+                        const docRef = window.firebaseDB.collection('bpte_projects').doc(item.code_f);
+                        batch.set(docRef, {
+                            ...item,
+                            timestamp: new Date(),
+                            source: 'bpte_upload',
+                            last_update: new Date().toISOString()
+                        }, { merge: false }); // merge: false = écrasement complet
+                    }
+                }
+                
+                await batch.commit();
+                console.log(`✅ ${bpteData.length} projets BPTE sauvegardés dans Firebase (écrasement)`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde BPTE:', error);
+                alert('❌ Erreur lors de la sauvegarde BPTE dans Firebase');
+            }
+        }
+        
+        // Sauvegarder les correspondances dans Firebase
+        async function saveCorrespondancesToFirebase(correspondancesData) {
+            if (!window.firebaseDB || !correspondancesData || correspondancesData.length === 0) return;
+            
+            try {
+                console.log('💾 Sauvegarde des correspondances dans Firebase...');
+                
+                // Sauvegarder toutes les correspondances en une seule fois
+                const docRef = window.firebaseDB.collection('correspondances').doc('all_matches');
+                await docRef.set({
+                    data: correspondancesData,
+                    count: correspondancesData.length,
+                    timestamp: new Date(),
+                    last_update: new Date().toISOString()
+                }, { merge: false }); // Écrasement complet
+                
+                console.log(`✅ ${correspondancesData.length} correspondances sauvegardées dans Firebase`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde des correspondances:', error);
+            }
+        }
+        
+        // Charger les données ADMIN depuis Firebase
+        async function loadAdminDataFromFirebase() {
+            if (!window.firebaseDB) return [];
+            
+            try {
+                console.log('📥 Chargement des données ADMIN depuis Firebase...');
+                const querySnapshot = await window.firebaseDB.collection('admin_projects').get();
+                const data = [];
+                
+                querySnapshot.forEach((doc) => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`✅ ${data.length} projets ADMIN chargés depuis Firebase`);
+                return data;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement ADMIN:', error);
+                return [];
+            }
+        }
+        
+        // Charger les données BPTE depuis Firebase
+        async function loadBpteDataFromFirebase() {
+            if (!window.firebaseDB) return [];
+            
+            try {
+                console.log('📥 Chargement des données BPTE depuis Firebase...');
+                const querySnapshot = await window.firebaseDB.collection('bpte_projects').get();
+                const data = [];
+                
+                querySnapshot.forEach((doc) => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`✅ ${data.length} projets BPTE chargés depuis Firebase`);
+                return data;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement BPTE:', error);
+                return [];
+            }
+        }
+        
+        // Charger les correspondances depuis Firebase
+        async function loadCorrespondancesFromFirebase() {
+            if (!window.firebaseDB) return [];
+            
+            try {
+                console.log('📥 Chargement des correspondances depuis Firebase...');
+                const docRef = window.firebaseDB.collection('correspondances').doc('all_matches');
+                const doc = await docRef.get();
+                
+                if (doc.exists) {
+                    const data = doc.data();
+                    console.log(`✅ ${data.count || 0} correspondances chargées depuis Firebase`);
+                    return data.data || [];
+                } else {
+                    console.log('ℹ️ Aucune correspondance trouvée dans Firebase');
+                    return [];
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des correspondances:', error);
+                return [];
+            }
+        }
+        
+        // Sauvegarder les données ferroviaires SNCF dans Firebase (avec écrasement)
+        async function saveSNCFDataToFirebase() {
+            if (!window.firebaseDB) {
+                alert('❌ Firebase non initialisé');
+                return;
+            }
+            
+            try {
+                console.log('💾 Sauvegarde des données SNCF dans Firebase...');
+                
+                // Sauvegarder les gares (écrasement complet)
+                const garesRef = window.firebaseDB.collection('sncf_data').doc('gares');
+                await garesRef.set({
+                    data: garesDataEmbedded,
+                    count: garesDataEmbedded.length,
+                    timestamp: new Date(),
+                    source: 'embedded_data',
+                    last_update: new Date().toISOString()
+                }, { merge: false });
+                
+                // Sauvegarder les passages à niveau (écrasement complet)
+                const pnRef = window.firebaseDB.collection('sncf_data').doc('passages_niveau');
+                await pnRef.set({
+                    data: passagesNiveauDataEmbedded,
+                    count: passagesNiveauDataEmbedded.length,
+                    timestamp: new Date(),
+                    source: 'embedded_data',
+                    last_update: new Date().toISOString()
+                }, { merge: false });
+                
+                // Sauvegarder les quais (écrasement complet)
+                const quaisRef = window.firebaseDB.collection('sncf_data').doc('quais');
+                await quaisRef.set({
+                    data: quaisDataEmbedded,
+                    count: quaisDataEmbedded.length,
+                    timestamp: new Date(),
+                    source: 'embedded_data',
+                    last_update: new Date().toISOString()
+                }, { merge: false });
+                
+                console.log('✅ Données SNCF sauvegardées dans Firebase');
+                console.log(`📊 Gares: ${garesDataEmbedded.length}, PN: ${passagesNiveauDataEmbedded.length}, Quais: ${quaisDataEmbedded.length}`);
+                alert('✅ Données SNCF initialisées dans Firebase !\n' + 
+                      `Gares: ${garesDataEmbedded.length}\n` +
+                      `PN: ${passagesNiveauDataEmbedded.length}\n` +
+                      `Quais: ${quaisDataEmbedded.length}`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde SNCF:', error);
+                alert('❌ Erreur lors de l\'initialisation Firebase: ' + error.message);
+            }
+        }
+        
+        // Fonction pour charger automatiquement TOUTES les données depuis Firebase
+        async function loadDataFromFirebaseOnStart() {
+            if (!window.firebaseDB) {
+                alert('❌ Firebase non initialisé');
+                return;
+            }
+            
+            try {
+                console.log('🚀 Chargement automatique des données depuis Firebase...');
+                
+                // Afficher un indicateur de chargement
+                updateStatus('📥 Chargement depuis Firebase...', 20);
+                
+                // Charger toutes les données en parallèle
+                const [adminFirebaseData, bpteFirebaseData, correspondancesFirebaseData] = await Promise.all([
+                    loadAdminDataFromFirebase(),
+                    loadBpteDataFromFirebase(),
+                    loadCorrespondancesFromFirebase()
+                ]);
+                
+                updateStatus('🔄 Traitement des données...', 60);
+                
+                // Assigner les données aux variables globales
+                if (adminFirebaseData.length > 0) {
+                    adminData = adminFirebaseData;
+                    rawAdminData = adminFirebaseData;
+                    console.log(`📊 ${adminData.length} projets ADMIN chargés depuis Firebase`);
+                }
+                
+                if (bpteFirebaseData.length > 0) {
+                    bpteData = bpteFirebaseData;
+                    rawBpteData = bpteFirebaseData;
+                    console.log(`📊 ${bpteData.length} projets BPTE chargés depuis Firebase`);
+                }
+                
+                if (correspondancesFirebaseData.length > 0) {
+                    correspondances = correspondancesFirebaseData;
+                    correspondancesFiltrees = correspondancesFirebaseData;
+                    allCorrespondances = [...correspondancesFirebaseData];
+                    console.log(`📊 ${correspondances.length} correspondances chargées depuis Firebase`);
+                }
+                
+                updateStatus('🗺️ Affichage sur la carte...', 80);
+                
+                // Si on a des données, les afficher
+                if (adminData.length > 0 || bpteData.length > 0 || correspondances.length > 0) {
+                    updateStats();
+                    
+                    // Si on a des correspondances, les utiliser directement
+                    if (correspondances.length > 0) {
+                        addMarkersToMap();
+                        showResults();
+                        initializeFilters();
+                    } else if (adminData.length > 0 && bpteData.length > 0) {
+                        // Sinon recalculer les correspondances
+                        await findCorrespondances();
+                        addMarkersToMap();
+                        showResults();
+                        initializeFilters();
+                    }
+                    
+                    updateStatus('✅ Données Firebase chargées avec succès !', 100);
+                    console.log('🎉 Chargement Firebase terminé avec succès');
+                    alert(`✅ Données chargées depuis Firebase !\n` +
+                          `Admin: ${adminData.length} projets\n` +
+                          `BPTE: ${bpteData.length} projets\n` +
+                          `Correspondances: ${correspondances.length}`);
+                } else {
+                    updateStatus('ℹ️ Aucune donnée trouvée dans Firebase', 100);
+                    alert('ℹ️ Aucune donnée trouvée dans Firebase.\nCommencez par uploader des fichiers Excel ou initialiser les données SNCF.');
+                }
+                
+                // Cacher la barre de progression après 3 secondes
+                setTimeout(() => {
+                    const progressBar = document.querySelector('.progress-bar');
+                    if (progressBar) progressBar.style.display = 'none';
+                }, 3000);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement automatique:', error);
+                updateStatus('❌ Erreur lors du chargement Firebase', 0);
+                alert('❌ Erreur lors du chargement Firebase: ' + error.message);
+            }
+        }
+
         // Variables pour les données
         let adminData = [];
         let bpteData = [];
@@ -3111,14 +3406,15 @@
                 updateStatus('🔍 Recherche des correspondances...', 70);
                 await findCorrespondances();
                 
-                // Sauvegarde dans Firebase
-                updateStatus('💾 Sauvegarde dans Firebase...', 85);
+                // Sauvegarde COMPLÈTE dans Firebase
+                updateStatus('💾 Sauvegarde complète dans Firebase...', 85);
                 try {
                     await Promise.all([
                         saveAdminDataToFirebase(adminData),
-                        saveBpteDataToFirebase(bpteData)
+                        saveBpteDataToFirebase(bpteData),
+                        saveCorrespondancesToFirebase(correspondances)
                     ]);
-                    console.log('✅ Données sauvegardées dans Firebase');
+                    console.log('✅ TOUTES les données sauvegardées dans Firebase (admin + bpte + correspondances)');
                 } catch (firebaseError) {
                     console.warn('⚠️ Erreur Firebase (non bloquante):', firebaseError);
                 }
