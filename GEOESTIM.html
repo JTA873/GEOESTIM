@@ -5,6 +5,36 @@
     <title>GEOESTIM - Géoloc des projets du PEI de Toulouse</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Firebase CDN -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js';
+        
+        // Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8nITJshSIhDAl0QT4uGLqJN4_ZCwT4EA",
+            authDomain: "geoestim.firebaseapp.com",
+            projectId: "geoestim",
+            storageBucket: "geoestim.firebasestorage.app",
+            messagingSenderId: "57133963308",
+            appId: "1:57133963308:web:06b8479e5f5f6ea75b9989",
+            measurementId: "G-V8DC3Q5GKC"
+        };
+        
+        // Initialiser Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
+        
+        // Rendre les objets Firebase disponibles globalement
+        window.firebaseDB = db;
+        window.firebaseApp = app;
+        window.firebaseAnalytics = analytics;
+        
+        console.log('🔥 Firebase initialisé avec succès');
+    </script>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -301,6 +331,12 @@
                             <span class="loading" id="loading-icon" style="display: none;"></span>
                             🚄 ANALYSER ET CARTOGRAPHIER
                         </button>
+                        <button class="btn" onclick="loadDataFromFirebaseOnStart()" title="Charger les données depuis Firebase" style="min-width: 180px;">
+                            🔥 CHARGER FIREBASE
+                        </button>
+                        <button class="btn" onclick="saveSNCFDataToFirebase()" title="Initialiser les données SNCF dans Firebase" style="min-width: 180px;">
+                            💾 INIT FIREBASE
+                        </button>
                     </div>
                     
                     <div class="progress-bar" id="progress-bar" style="display: none;">
@@ -379,6 +415,185 @@
         let layers = {};
         let markers = [];
         
+        // ========== FONCTIONS FIREBASE ==========
+        
+        // Sauvegarder les données ADMIN dans Firebase
+        async function saveAdminDataToFirebase(adminData) {
+            if (!window.firebaseDB || !adminData || adminData.length === 0) return;
+            
+            try {
+                console.log('💾 Sauvegarde des données ADMIN dans Firebase...');
+                const batch = [];
+                
+                for (let i = 0; i < adminData.length; i++) {
+                    const item = adminData[i];
+                    if (item.F1) { // Si on a un code F
+                        const docRef = doc(window.firebaseDB, 'admin_projects', item.F1);
+                        batch.push(setDoc(docRef, {
+                            ...item,
+                            timestamp: new Date(),
+                            source: 'admin_upload'
+                        }));
+                    }
+                }
+                
+                await Promise.all(batch);
+                console.log(`✅ ${adminData.length} projets ADMIN sauvegardés dans Firebase`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde ADMIN:', error);
+            }
+        }
+        
+        // Sauvegarder les données BPTE dans Firebase
+        async function saveBpteDataToFirebase(bpteData) {
+            if (!window.firebaseDB || !bpteData || bpteData.length === 0) return;
+            
+            try {
+                console.log('💾 Sauvegarde des données BPTE dans Firebase...');
+                const batch = [];
+                
+                for (let i = 0; i < bpteData.length; i++) {
+                    const item = bpteData[i];
+                    if (item.code_f) { // Si on a un code F
+                        const docRef = doc(window.firebaseDB, 'bpte_projects', item.code_f);
+                        batch.push(setDoc(docRef, {
+                            ...item,
+                            timestamp: new Date(),
+                            source: 'bpte_upload'
+                        }));
+                    }
+                }
+                
+                await Promise.all(batch);
+                console.log(`✅ ${bpteData.length} projets BPTE sauvegardés dans Firebase`);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde BPTE:', error);
+            }
+        }
+        
+        // Charger les données ADMIN depuis Firebase
+        async function loadAdminDataFromFirebase() {
+            if (!window.firebaseDB) return [];
+            
+            try {
+                console.log('📥 Chargement des données ADMIN depuis Firebase...');
+                const querySnapshot = await getDocs(collection(window.firebaseDB, 'admin_projects'));
+                const data = [];
+                
+                querySnapshot.forEach((doc) => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`✅ ${data.length} projets ADMIN chargés depuis Firebase`);
+                return data;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement ADMIN:', error);
+                return [];
+            }
+        }
+        
+        // Charger les données BPTE depuis Firebase
+        async function loadBpteDataFromFirebase() {
+            if (!window.firebaseDB) return [];
+            
+            try {
+                console.log('📥 Chargement des données BPTE depuis Firebase...');
+                const querySnapshot = await getDocs(collection(window.firebaseDB, 'bpte_projects'));
+                const data = [];
+                
+                querySnapshot.forEach((doc) => {
+                    data.push({ id: doc.id, ...doc.data() });
+                });
+                
+                console.log(`✅ ${data.length} projets BPTE chargés depuis Firebase`);
+                return data;
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement BPTE:', error);
+                return [];
+            }
+        }
+        
+        // Sauvegarder les données ferroviaires SNCF dans Firebase
+        async function saveSNCFDataToFirebase() {
+            if (!window.firebaseDB) return;
+            
+            try {
+                console.log('💾 Sauvegarde des données SNCF dans Firebase...');
+                
+                // Sauvegarder les gares
+                const garesRef = doc(window.firebaseDB, 'sncf_data', 'gares');
+                await setDoc(garesRef, {
+                    data: garesDataEmbedded,
+                    timestamp: new Date(),
+                    source: 'embedded_data'
+                });
+                
+                // Sauvegarder les passages à niveau
+                const pnRef = doc(window.firebaseDB, 'sncf_data', 'passages_niveau');
+                await setDoc(pnRef, {
+                    data: passagesNiveauDataEmbedded,
+                    timestamp: new Date(),
+                    source: 'embedded_data'
+                });
+                
+                // Sauvegarder les quais
+                const quaisRef = doc(window.firebaseDB, 'sncf_data', 'quais');
+                await setDoc(quaisRef, {
+                    data: quaisDataEmbedded,
+                    timestamp: new Date(),
+                    source: 'embedded_data'
+                });
+                
+                console.log('✅ Données SNCF sauvegardées dans Firebase');
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde SNCF:', error);
+            }
+        }
+        
+        // Fonction pour charger automatiquement les données depuis Firebase au démarrage
+        async function loadDataFromFirebaseOnStart() {
+            if (!window.firebaseDB) return;
+            
+            try {
+                console.log('🚀 Chargement automatique des données depuis Firebase...');
+                
+                // Charger les données projets
+                const [adminFirebaseData, bpteFirebaseData] = await Promise.all([
+                    loadAdminDataFromFirebase(),
+                    loadBpteDataFromFirebase()
+                ]);
+                
+                if (adminFirebaseData.length > 0) {
+                    adminData = adminFirebaseData;
+                    rawAdminData = adminFirebaseData;
+                    console.log(`📊 ${adminData.length} projets ADMIN chargés depuis Firebase`);
+                }
+                
+                if (bpteFirebaseData.length > 0) {
+                    bpteData = bpteFirebaseData;
+                    rawBpteData = bpteFirebaseData;
+                    console.log(`📊 ${bpteData.length} projets BPTE chargés depuis Firebase`);
+                }
+                
+                // Si on a des données, lancer l'analyse
+                if (adminData.length > 0 && bpteData.length > 0) {
+                    updateStats();
+                    await findCorrespondances();
+                    addMarkersToMap();
+                    showResults();
+                    initializeFilters();
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement automatique:', error);
+            }
+        }
+
         // Variables pour les données
         let adminData = [];
         let bpteData = [];
@@ -2887,6 +3102,18 @@
                 updateStatus('🔍 Recherche des correspondances...', 70);
                 await findCorrespondances();
                 
+                // Sauvegarde dans Firebase
+                updateStatus('💾 Sauvegarde dans Firebase...', 85);
+                try {
+                    await Promise.all([
+                        saveAdminDataToFirebase(adminData),
+                        saveBpteDataToFirebase(bpteData)
+                    ]);
+                    console.log('✅ Données sauvegardées dans Firebase');
+                } catch (firebaseError) {
+                    console.warn('⚠️ Erreur Firebase (non bloquante):', firebaseError);
+                }
+                
                 updateStatus('✅ Traitement terminé !', 100);
                 setTimeout(() => {
                     if (progressBar) progressBar.style.display = 'none';
@@ -4700,7 +4927,17 @@
         }
 
         // Initialiser au chargement de la page
-        document.addEventListener('DOMContentLoaded', initRailwayMap);
+        document.addEventListener('DOMContentLoaded', function() {
+            initRailwayMap();
+            
+            // Tentative de chargement automatique depuis Firebase après un court délai
+            setTimeout(async () => {
+                if (window.firebaseDB) {
+                    console.log('🔥 Tentative de chargement automatique depuis Firebase...');
+                    await loadDataFromFirebaseOnStart();
+                }
+            }, 2000);
+        });
         
         // ========== GESTION ALERTE FERMETURE PAGE ==========
         let isProcessing = false;
