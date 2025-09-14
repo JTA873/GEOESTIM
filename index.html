@@ -335,35 +335,17 @@
                 margin-bottom: 15px;
             }
             
-            /* Upload de fichiers mobile */
-            .upload-area {
-                padding: 15px;
-                margin: 10px 0;
+            /* ======== MASQUER COMPLÈTEMENT L'UPLOAD SUR MOBILE ======== */
+            .section:has(h3:contains("Configuration des Fichiers")),
+            .section h3:contains("Configuration des Fichiers"),
+            .upload-area,
+            .control-buttons {
+                display: none !important;
             }
             
-            .upload-area label {
-                font-size: 13px;
-                font-weight: 600;
-                margin-bottom: 6px;
-            }
-            
-            .upload-area input[type="file"] {
-                padding: 10px;
-                font-size: 14px;
-            }
-            
-            .upload-area .control-buttons {
-                flex-direction: column;
-                gap: 10px;
-                margin-top: 15px;
-            }
-            
-            .upload-area .control-buttons button {
-                width: 100% !important;
-                min-width: auto !important;
-                flex: none !important;
-                padding: 12px 16px;
-                font-size: 14px;
+            /* Alternative : masquer par position si :has ne fonctionne pas */
+            .section:nth-of-type(2) {
+                display: none !important;
             }
             
             /* Stats mobile */
@@ -387,10 +369,10 @@
                 font-size: 12px;
             }
             
-            /* Carte mobile */
+            /* Carte mobile - plus grande sans l'upload */
             #map {
-                height: 50vh !important;
-                min-height: 300px;
+                height: 60vh !important;
+                min-height: 350px;
                 border-radius: 10px;
                 margin-bottom: 15px;
             }
@@ -417,6 +399,44 @@
                 height: 32px !important;
                 line-height: 32px !important;
                 font-size: 16px !important;
+            }
+            
+            /* Ajouter bouton Firebase flottant sur mobile */
+            .mobile-firebase-controls {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 10px;
+                z-index: 1000;
+                background: rgba(255,255,255,0.95);
+                padding: 10px;
+                border-radius: 20px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                backdrop-filter: blur(10px);
+            }
+            
+            .mobile-firebase-controls button {
+                padding: 12px 16px;
+                font-size: 12px;
+                font-weight: 600;
+                border: none;
+                border-radius: 15px;
+                color: white;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            }
+            
+            .mobile-firebase-controls .btn-firebase {
+                background: linear-gradient(45deg, #FF6B35, #F7931E);
+                min-width: 120px;
+            }
+            
+            .mobile-firebase-controls .btn-init {
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                min-width: 100px;
             }
             
             /* Filtres mobile */
@@ -503,7 +523,7 @@
             
             /* Légende mobile */
             .legend {
-                bottom: 10px;
+                bottom: 100px; /* Plus haut à cause des boutons flottants */
                 right: 10px;
                 left: 10px;
                 width: auto;
@@ -544,17 +564,6 @@
                 margin: 8px 0;
             }
             
-            /* Boutons généraux mobile */
-            .btn {
-                padding: 10px 16px;
-                font-size: 13px;
-                border-radius: 6px;
-            }
-            
-            .btn:hover {
-                transform: none; /* Pas d'animation hover sur mobile */
-            }
-            
             /* Masquer certains éléments sur très petit écran */
             @media screen and (max-width: 480px) {
                 .stat-label {
@@ -578,6 +587,17 @@
                 #results-section td {
                     padding: 6px 3px;
                     min-width: 60px;
+                }
+                
+                .mobile-firebase-controls {
+                    bottom: 15px;
+                    padding: 8px;
+                }
+                
+                .mobile-firebase-controls button {
+                    padding: 10px 12px;
+                    font-size: 11px;
+                    min-width: 90px;
                 }
             }
             
@@ -637,6 +657,12 @@
             </p>
             <p>Géolocalisation des projets du PEI de Toulouse</p>
             <div style="background: linear-gradient(45deg, #4caf50, #2196f3); height: 4px; border-radius: 2px; margin: 15px auto; width: 200px;"></div>
+        </div>
+        
+        <!-- Boutons Firebase flottants pour mobile -->
+        <div class="mobile-firebase-controls" style="display: none;">
+            <button class="btn-firebase" onclick="loadDataFromFirebaseOnStart()">🔥 CHARGER</button>
+            <button class="btn-init" onclick="initializeFirebaseData()">💾 INIT</button>
         </div>
         
         <!-- Upload des fichiers et Stats sur la même ligne -->
@@ -5208,6 +5234,19 @@
                     }
                 });
             }
+            
+            // Afficher les boutons Firebase flottants sur mobile
+            function checkMobileControls() {
+                const isMobile = window.innerWidth <= 768;
+                const mobileControls = document.querySelector('.mobile-firebase-controls');
+                if (mobileControls) {
+                    mobileControls.style.display = isMobile ? 'flex' : 'none';
+                }
+            }
+            
+            // Vérifier au chargement et au redimensionnement
+            checkMobileControls();
+            window.addEventListener('resize', checkMobileControls);
         });
 
         // Fonction de debug pour diagnostiquer les problèmes de données
