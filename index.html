@@ -344,6 +344,9 @@
                         <button class="btn" onclick="saveSNCFDataToFirebase()" title="Initialiser les données SNCF dans Firebase" style="min-width: 180px;">
                             💾 INIT FIREBASE
                         </button>
+                        <button class="btn" onclick="resetFirebaseWithPin()" title="Réinitialiser Firebase (code PIN requis)" style="min-width: 180px; background: linear-gradient(45deg, #dc3545, #c82333); border-color: #dc3545;">
+                            🔄 RESET FIREBASE
+                        </button>
                     </div>
                     
                     <div class="progress-bar" id="progress-bar" style="display: none;">
@@ -895,6 +898,107 @@
                 console.error('❌ Erreur lors du chargement automatique:', error);
                 updateStatus('❌ Erreur lors du chargement Firebase', 0);
                 alert('❌ Erreur lors du chargement Firebase: ' + error.message);
+            }
+        }
+
+        // Fonction de réinitialisation Firebase avec code PIN
+        async function resetFirebaseWithPin() {
+            const pin = prompt("⚠️ ATTENTION: Cette action va SUPPRIMER toutes les données Firebase !\n\nPour confirmer, veuillez saisir le code PIN :");
+            
+            if (pin === null) {
+                return; // L'utilisateur a annulé
+            }
+            
+            if (pin !== "2011") {
+                alert("❌ Code PIN incorrect. Réinitialisation annulée.");
+                return;
+            }
+            
+            const confirmDelete = confirm("🔥 Code PIN validé.\n\nÊtes-vous ABSOLUMENT CERTAIN de vouloir supprimer TOUTES les données Firebase ?\n\nCette action est IRRÉVERSIBLE !");
+            
+            if (!confirmDelete) {
+                return;
+            }
+            
+            try {
+                console.log('🔄 Début de la réinitialisation Firebase...');
+                updateStatus('🔄 Réinitialisation Firebase en cours...', 10);
+                
+                // Supprimer toutes les collections Firebase
+                const collections = ['admin_data', 'bpte_data', 'correspondances'];
+                
+                for (let i = 0; i < collections.length; i++) {
+                    const collectionName = collections[i];
+                    updateStatus(`🗑️ Suppression de ${collectionName}...`, 20 + (i * 25));
+                    
+                    try {
+                        const querySnapshot = await window.firebaseDB.collection(collectionName).get();
+                        
+                        if (!querySnapshot.empty) {
+                            console.log(`📂 Suppression de ${querySnapshot.docs.length} documents de ${collectionName}`);
+                            
+                            // Supprimer tous les documents de la collection
+                            const batch = window.firebaseDB.batch();
+                            querySnapshot.docs.forEach((doc) => {
+                                batch.delete(doc.ref);
+                            });
+                            await batch.commit();
+                            
+                            console.log(`✅ Collection ${collectionName} supprimée`);
+                        } else {
+                            console.log(`ℹ️ Collection ${collectionName} déjà vide`);
+                        }
+                    } catch (error) {
+                        console.warn(`⚠️ Erreur lors de la suppression de ${collectionName}:`, error);
+                    }
+                }
+                
+                updateStatus('🧹 Nettoyage des données locales...', 95);
+                
+                // Vider les variables locales
+                adminData = [];
+                bpteData = [];
+                correspondances = [];
+                correspondancesFiltrees = [];
+                rawAdminData = [];
+                rawBpteData = [];
+                allCorrespondances = [];
+                
+                // Nettoyer la carte
+                if (window.currentMarkers) {
+                    window.currentMarkers.forEach(marker => {
+                        if (marker && marker.remove) {
+                            marker.remove();
+                        }
+                    });
+                    window.currentMarkers = [];
+                }
+                
+                // Nettoyer l'affichage
+                const resultsContainer = document.getElementById('results');
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '';
+                    resultsContainer.style.display = 'none';
+                }
+                
+                // Réinitialiser les statistiques
+                updateStats();
+                
+                updateStatus('✅ Réinitialisation Firebase terminée !', 100);
+                
+                console.log('🎉 Réinitialisation Firebase terminée avec succès');
+                alert('✅ Firebase a été réinitialisé avec succès !\n\nToutes les données ont été supprimées.\nVous pouvez maintenant recommencer à zéro.');
+                
+                // Cacher la barre de progression après 3 secondes
+                setTimeout(() => {
+                    const progressBar = document.querySelector('.progress-bar');
+                    if (progressBar) progressBar.style.display = 'none';
+                }, 3000);
+                
+            } catch (error) {
+                console.error('❌ Erreur lors de la réinitialisation Firebase:', error);
+                updateStatus('❌ Erreur lors de la réinitialisation', 0);
+                alert('❌ Erreur lors de la réinitialisation Firebase: ' + error.message);
             }
         }
 
