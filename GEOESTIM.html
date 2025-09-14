@@ -6,12 +6,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Firebase CDN -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js';
-        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.5.0/firebase-analytics.js';
-        
+    <!-- Firebase CDN - Version UMD pour GitHub Pages -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics-compat.js"></script>
+    
+    <script>
         // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyA8nITJshSIhDAl0QT4uGLqJN4_ZCwT4EA",
@@ -24,16 +24,23 @@
         };
         
         // Initialiser Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const analytics = getAnalytics(app);
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Initialiser Analytics si possible
+        let analytics = null;
+        try {
+            analytics = firebase.analytics();
+        } catch (e) {
+            console.log('Analytics non disponible:', e);
+        }
         
         // Rendre les objets Firebase disponibles globalement
         window.firebaseDB = db;
-        window.firebaseApp = app;
+        window.firebaseApp = firebase;
         window.firebaseAnalytics = analytics;
         
-        console.log('🔥 Firebase initialisé avec succès');
+        console.log('🔥 Firebase initialisé avec succès (version compat)');
     </script>
     <style>
         body { 
@@ -423,21 +430,21 @@
             
             try {
                 console.log('💾 Sauvegarde des données ADMIN dans Firebase...');
-                const batch = [];
+                const batch = window.firebaseDB.batch();
                 
                 for (let i = 0; i < adminData.length; i++) {
                     const item = adminData[i];
                     if (item.F1) { // Si on a un code F
-                        const docRef = doc(window.firebaseDB, 'admin_projects', item.F1);
-                        batch.push(setDoc(docRef, {
+                        const docRef = window.firebaseDB.collection('admin_projects').doc(item.F1);
+                        batch.set(docRef, {
                             ...item,
                             timestamp: new Date(),
                             source: 'admin_upload'
-                        }));
+                        });
                     }
                 }
                 
-                await Promise.all(batch);
+                await batch.commit();
                 console.log(`✅ ${adminData.length} projets ADMIN sauvegardés dans Firebase`);
                 
             } catch (error) {
@@ -451,21 +458,21 @@
             
             try {
                 console.log('💾 Sauvegarde des données BPTE dans Firebase...');
-                const batch = [];
+                const batch = window.firebaseDB.batch();
                 
                 for (let i = 0; i < bpteData.length; i++) {
                     const item = bpteData[i];
                     if (item.code_f) { // Si on a un code F
-                        const docRef = doc(window.firebaseDB, 'bpte_projects', item.code_f);
-                        batch.push(setDoc(docRef, {
+                        const docRef = window.firebaseDB.collection('bpte_projects').doc(item.code_f);
+                        batch.set(docRef, {
                             ...item,
                             timestamp: new Date(),
                             source: 'bpte_upload'
-                        }));
+                        });
                     }
                 }
                 
-                await Promise.all(batch);
+                await batch.commit();
                 console.log(`✅ ${bpteData.length} projets BPTE sauvegardés dans Firebase`);
                 
             } catch (error) {
@@ -479,7 +486,7 @@
             
             try {
                 console.log('📥 Chargement des données ADMIN depuis Firebase...');
-                const querySnapshot = await getDocs(collection(window.firebaseDB, 'admin_projects'));
+                const querySnapshot = await window.firebaseDB.collection('admin_projects').get();
                 const data = [];
                 
                 querySnapshot.forEach((doc) => {
@@ -501,7 +508,7 @@
             
             try {
                 console.log('📥 Chargement des données BPTE depuis Firebase...');
-                const querySnapshot = await getDocs(collection(window.firebaseDB, 'bpte_projects'));
+                const querySnapshot = await window.firebaseDB.collection('bpte_projects').get();
                 const data = [];
                 
                 querySnapshot.forEach((doc) => {
@@ -525,33 +532,35 @@
                 console.log('💾 Sauvegarde des données SNCF dans Firebase...');
                 
                 // Sauvegarder les gares
-                const garesRef = doc(window.firebaseDB, 'sncf_data', 'gares');
-                await setDoc(garesRef, {
+                const garesRef = window.firebaseDB.collection('sncf_data').doc('gares');
+                await garesRef.set({
                     data: garesDataEmbedded,
                     timestamp: new Date(),
                     source: 'embedded_data'
                 });
                 
                 // Sauvegarder les passages à niveau
-                const pnRef = doc(window.firebaseDB, 'sncf_data', 'passages_niveau');
-                await setDoc(pnRef, {
+                const pnRef = window.firebaseDB.collection('sncf_data').doc('passages_niveau');
+                await pnRef.set({
                     data: passagesNiveauDataEmbedded,
                     timestamp: new Date(),
                     source: 'embedded_data'
                 });
                 
                 // Sauvegarder les quais
-                const quaisRef = doc(window.firebaseDB, 'sncf_data', 'quais');
-                await setDoc(quaisRef, {
+                const quaisRef = window.firebaseDB.collection('sncf_data').doc('quais');
+                await quaisRef.set({
                     data: quaisDataEmbedded,
                     timestamp: new Date(),
                     source: 'embedded_data'
                 });
                 
                 console.log('✅ Données SNCF sauvegardées dans Firebase');
+                alert('✅ Données SNCF initialisées dans Firebase !');
                 
             } catch (error) {
                 console.error('❌ Erreur lors de la sauvegarde SNCF:', error);
+                alert('❌ Erreur lors de l\'initialisation Firebase');
             }
         }
         
